@@ -1,4 +1,5 @@
 import TrafficChart from '../components/TrafficChart';
+import PageAnalytics from '../components/PageAnalytics';
 
 export default function Dashboard() {
   return (
@@ -8,6 +9,7 @@ export default function Dashboard() {
       {/* KPI Row Placeholder (skipped in Prompt 02) */}
       
       <TrafficChart />
+      <PageAnalytics />
     </div>
   );
 }
