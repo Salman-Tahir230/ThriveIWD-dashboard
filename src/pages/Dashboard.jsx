@@ -1,5 +1,7 @@
 import TrafficChart from '../components/TrafficChart';
 import PageAnalytics from '../components/PageAnalytics';
+import Funnel from '../components/Funnel';
+import AIPanel from '../components/AIPanel';
 
 export default function Dashboard() {
   return (
@@ -8,8 +10,11 @@ export default function Dashboard() {
       
       {/* KPI Row Placeholder (skipped in Prompt 02) */}
       
+      <AIPanel />
+
       <TrafficChart />
       <PageAnalytics />
+      <Funnel />
     </div>
   );
 }

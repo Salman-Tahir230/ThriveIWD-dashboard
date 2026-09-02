@@ -1,3 +1,10 @@
+import React from 'react';
+import RevenueTracker from '../components/RevenueTracker';
+
 export default function Revenue() {
-  return <h1>Revenue</h1>;
+  return (
+    <div>
+      <RevenueTracker />
+    </div>
+  );
 }
