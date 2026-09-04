@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       'https://www.googleapis.com/auth/spreadsheets.readonly'
     );
 
-    // Step 1: Get actual sheet name dynamically
+    // Get actual sheet name dynamically
     const metaResponse = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const meta = await metaResponse.json();
     const sheetName = meta.sheets?.[0]?.properties?.title || 'Sheet1';
 
-    // Step 2: Fetch data from first sheet
+    // Fetch data
     const dataResponse = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -46,11 +46,14 @@ export default async function handler(req, res) {
     console.error('Sheets Error:', error);
     res.status(500).json({ error: error.message });
   }
-}
+};
 
-function base64url(data) {
-  const buf = typeof data === 'string' ? Buffer.from(data) : Buffer.from(data);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+function base64url(str) {
+  return Buffer.from(str)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }
 
 async function getAccessToken(serviceAccount, scope) {

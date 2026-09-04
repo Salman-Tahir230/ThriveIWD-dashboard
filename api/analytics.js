@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -60,11 +60,14 @@ export default async function handler(req, res) {
     console.error('GA4 Error:', error);
     res.status(500).json({ error: error.message });
   }
-}
+};
 
-function base64url(data) {
-  const buf = typeof data === 'string' ? Buffer.from(data) : Buffer.from(data);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+function base64url(str) {
+  return Buffer.from(str)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }
 
 async function getAccessToken(serviceAccount, scope) {
