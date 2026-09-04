@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -7,10 +9,11 @@ export default async function handler(req, res) {
     const serviceAccount = JSON.parse(process.env.GA4_SERVICE_ACCOUNT_KEY);
     const propertyId = process.env.GA4_PROPERTY_ID;
 
-    // Get JWT token
-    const token = await getAccessToken(serviceAccount);
+    const token = await getAccessToken(
+      serviceAccount,
+      'https://www.googleapis.com/auth/analytics.readonly'
+    );
 
-    // Fetch GA4 data - multiple reports
     const [overviewData, geoData, deviceData, pageData] = await Promise.all([
       fetchGA4Report(token, propertyId, {
         metrics: [
@@ -54,50 +57,44 @@ export default async function handler(req, res) {
       pages: pageData,
     });
   } catch (error) {
-    console.error('GA4 API Error:', error);
+    console.error('GA4 Error:', error);
     res.status(500).json({ error: error.message });
   }
 }
 
-async function getAccessToken(serviceAccount) {
-  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+function base64url(data) {
+  const buf = typeof data === 'string' ? Buffer.from(data) : Buffer.from(data);
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function getAccessToken(serviceAccount, scope) {
   const now = Math.floor(Date.now() / 1000);
-  const payload = btoa(
+  const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = base64url(
     JSON.stringify({
       iss: serviceAccount.client_email,
-      scope: 'https://www.googleapis.com/auth/analytics.readonly',
+      scope,
       aud: 'https://oauth2.googleapis.com/token',
       exp: now + 3600,
       iat: now,
     })
   );
 
-  const privateKey = serviceAccount.private_key;
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    pemToArrayBuffer(privateKey),
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
   const signingInput = `${header}.${payload}`;
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    new TextEncoder().encode(signingInput)
-  );
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(signingInput);
+  const signature = base64url(sign.sign(serviceAccount.private_key));
+  const jwt = `${signingInput}.${signature}`;
 
-  const jwt = `${signingInput}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
-
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
-  const tokenData = await tokenResponse.json();
-  return tokenData.access_token;
+  const data = await response.json();
+  if (!data.access_token) throw new Error(`Token error: ${JSON.stringify(data)}`);
+  return data.access_token;
 }
 
 async function fetchGA4Report(token, propertyId, body) {
@@ -113,16 +110,4 @@ async function fetchGA4Report(token, propertyId, body) {
     }
   );
   return response.json();
-}
-
-function pemToArrayBuffer(pem) {
-  const base64 = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\n/g, '');
-  const binary = atob(base64);
-  const buffer = new ArrayBuffer(binary.length);
-  const view = new Uint8Array(buffer);
-  for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
-  return buffer;
 }
