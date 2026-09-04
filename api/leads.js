@@ -14,34 +14,55 @@ export default async function handler(req, res) {
       'https://www.googleapis.com/auth/spreadsheets.readonly'
     );
 
-    // Get actual sheet name dynamically
+    // Step 1: Get ALL sheet names
     const metaResponse = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const meta = await metaResponse.json();
-    const sheetName = meta.sheets?.[0]?.properties?.title || 'Sheet1';
+    const allSheets = meta.sheets?.map((s) => s.properties.title) || ['Sheet1'];
 
-    // Fetch data
-    const dataResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    // Step 2: Fetch data from ALL sheets in parallel
+    const allSheetsData = await Promise.all(
+      allSheets.map(async (sheetName) => {
+        const dataResponse = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await dataResponse.json();
+        const rows = data.values || [];
+
+        if (rows.length === 0) return { sheetName, headers: [], rows: [], total: 0 };
+
+        const headers = rows[0];
+        const leads = rows.slice(1).map((row) => {
+          const obj = {};
+          headers.forEach((header, i) => {
+            obj[header] = row[i] || '';
+          });
+          return obj;
+        });
+
+        return {
+          sheetName,
+          headers,
+          leads,
+          total: leads.length,
+        };
+      })
     );
-    const data = await dataResponse.json();
 
-    const rows = data.values || [];
-    if (rows.length === 0) return res.status(200).json({ leads: [], sheetName });
+    // Step 3: Also return flat combined list of all leads
+    const allLeads = allSheetsData.flatMap((s) => 
+      s.leads?.map((lead) => ({ ...lead, _sheet: s.sheetName })) || []
+    );
 
-    const headers = rows[0];
-    const leads = rows.slice(1).map((row) => {
-      const obj = {};
-      headers.forEach((header, i) => {
-        obj[header] = row[i] || '';
-      });
-      return obj;
+    res.status(200).json({
+      sheets: allSheetsData,        // each sheet separately
+      allLeads,                      // all combined
+      totalSheets: allSheets.length,
+      totalLeads: allLeads.length,
     });
-
-    res.status(200).json({ leads, sheetName, total: leads.length });
   } catch (error) {
     console.error('Sheets Error:', error);
     res.status(500).json({ error: error.message });
