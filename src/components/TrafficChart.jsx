@@ -1,10 +1,29 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { HelpCircle } from 'lucide-react';
-import { trafficSourceData } from '../data/mockData';
+import { useDashboardData } from '../context/DashboardDataContext';
+import { parseGA4Report } from '../lib/ga4';
 
 const COLORS = ['#14B8A6', '#3B82F6', '#8B5CF6', '#F59E0B', '#64748b'];
 
 export default function TrafficChart() {
+  const { analytics } = useDashboardData();
+
+  const trafficSourceData = (analytics?.trafficSources ? parseGA4Report(analytics.trafficSources) : [])
+    .map((row) => ({
+      source: row.sessionDefaultChannelGroup || 'Unknown',
+      leadCount: Number(row.totalUsers) || 0,
+    }))
+    .sort((a, b) => b.leadCount - a.leadCount);
+
+  if (trafficSourceData.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Traffic Source Comparison</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No GA4 traffic-source data available for the last 30 days.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 mt-6">
       <div className="flex items-center justify-between mb-6">

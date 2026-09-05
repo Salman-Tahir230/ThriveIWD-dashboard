@@ -1,11 +1,31 @@
 import React, { useMemo } from 'react';
-import { geographyData } from '../data/mockData';
+import { useDashboardData } from '../context/DashboardDataContext';
+import { parseGA4Report, formatSeconds } from '../lib/ga4';
 import { Info, MapPin } from 'lucide-react';
 
 export default function GeographyTable() {
+  const { analytics } = useDashboardData();
+
   const sortedData = useMemo(() => {
-    return [...geographyData].sort((a, b) => b.userCount - a.userCount);
-  }, []);
+    const rows = analytics?.geography ? parseGA4Report(analytics.geography) : [];
+    return rows
+      .map((row) => ({
+        city: row.city || 'Unknown',
+        country: row.country || 'Unknown',
+        userCount: Number(row.totalUsers) || 0,
+        avgSessionDuration: formatSeconds(row.averageSessionDuration),
+      }))
+      .sort((a, b) => b.userCount - a.userCount);
+  }, [analytics]);
+
+  if (sortedData.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mt-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">User Geography</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No GA4 geography data available for the last 30 days.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-6">

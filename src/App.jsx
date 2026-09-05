@@ -6,6 +6,7 @@ import Users from './pages/Users';
 import Leads from './pages/Leads';
 import Revenue from './pages/Revenue';
 import Sidebar from './components/Sidebar';
+import { DashboardDataProvider } from './context/DashboardDataContext';
 
 function App() {
   const [isDark, setIsDark] = useState(false);
@@ -20,7 +21,8 @@ function App() {
 
   return (
     <Router>
-      <div 
+      <DashboardDataProvider>
+      <div
         className="min-h-screen flex transition-colors duration-200"
         style={containerStyle}
       >
@@ -69,6 +71,7 @@ function App() {
           </main>
         </div>
       </div>
+      </DashboardDataProvider>
     </Router>
   );
 }

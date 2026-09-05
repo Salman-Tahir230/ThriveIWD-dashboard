@@ -1,9 +1,58 @@
-import React from 'react';
-import { deviceData } from '../data/mockData';
+import React, { useMemo } from 'react';
+import { useDashboardData } from '../context/DashboardDataContext';
+import { parseGA4Report } from '../lib/ga4';
 import { Smartphone, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
+const DEVICE_COLORS = { mobile: '#6366f1', desktop: '#818cf8', tablet: '#a5b4fc' };
+const OS_COLORS = ['#10b981', '#059669', '#34d399', '#6ee7b7', '#a7f3d0'];
+
+function toPercentSlices(counts, colorFor) {
+  const total = Object.values(counts).reduce((sum, v) => sum + v, 0);
+  if (total === 0) return [];
+  return Object.entries(counts).map(([name, value], idx) => ({
+    name,
+    value: Math.round((value / total) * 1000) / 10,
+    fill: colorFor(name, idx),
+  }));
+}
+
 export default function DeviceBreakdown() {
+  const { analytics } = useDashboardData();
+
+  const deviceData = useMemo(() => {
+    const rows = analytics?.devices ? parseGA4Report(analytics.devices) : [];
+
+    const byDeviceType = {};
+    const byMobileOS = {};
+    rows.forEach((row) => {
+      const category = (row.deviceCategory || 'unknown').toLowerCase();
+      const os = row.operatingSystem || 'Unknown';
+      const users = Number(row.totalUsers) || 0;
+      byDeviceType[category] = (byDeviceType[category] || 0) + users;
+      if (category === 'mobile') {
+        byMobileOS[os] = (byMobileOS[os] || 0) + users;
+      }
+    });
+
+    return {
+      mainBreakdown: toPercentSlices(byDeviceType, (name) => DEVICE_COLORS[name] || '#94a3b8').map((d) => ({
+        ...d,
+        name: d.name.charAt(0).toUpperCase() + d.name.slice(1),
+      })),
+      mobileOS: toPercentSlices(byMobileOS, (_, idx) => OS_COLORS[idx % OS_COLORS.length]),
+    };
+  }, [analytics]);
+
+  if (deviceData.mainBreakdown.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mt-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Device Breakdown</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No GA4 device data available for the last 30 days.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-6 p-6">
       <div className="flex items-center justify-between mb-6">

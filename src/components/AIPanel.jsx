@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
-import { trafficSourceData, leadsData } from '../data/mockData';
+import { useDashboardData } from '../context/DashboardDataContext';
+import { parseGA4Report, parseGA4Overview } from '../lib/ga4';
 
 export default function AIPanel() {
+  const { analytics, leads, loading: dataLoading } = useDashboardData();
   const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -11,47 +13,22 @@ export default function AIPanel() {
     setLoading(true);
     setError(null);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey || apiKey === 'your_key_here') {
-        throw new Error("Missing Groq API key in .env file.");
-      }
+      const overview = analytics?.overview ? parseGA4Overview(analytics.overview) : {};
+      const trafficSources = analytics?.trafficSources ? parseGA4Report(analytics.trafficSources) : [];
+      const recentLeads = (leads?.leads || []).slice(0, 10);
 
-      const promptText = `
-Based on the following data, provide 3 to 5 short business insights in plain English. One sentence each.
-Traffic Sources: ${JSON.stringify(trafficSourceData)}
-Leads (recent): ${JSON.stringify(leadsData.slice(0, 10))}
-
-Return the insights as a simple bulleted list, starting each insight with a dash (-). Do not include any other text.
-`;
-
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('/api/insights', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-20b',
-          messages: [{ role: 'user', content: promptText }],
-          temperature: 0.7,
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ overview, trafficSources, leads: recentLeads }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Groq API Error:', errorData);
-        throw new Error(`API Error: ${response.status} - ${errorData}`);
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `API Error: ${response.status}`);
       }
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || "";
-      
-      const parsedInsights = content
-        .split('\n')
-        .map(line => line.trim().replace(/^[-*]\s*/, '').trim())
-        .filter(line => line.length > 0 && !line.startsWith('Here are'));
-
-      setInsights(parsedInsights);
+      setInsights(data.insights || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,8 +37,11 @@ Return the insights as a simple bulleted list, starting each insight with a dash
   };
 
   useEffect(() => {
-    fetchInsights();
-  }, []);
+    if (!dataLoading) {
+      fetchInsights();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataLoading]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">

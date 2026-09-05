@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       'https://www.googleapis.com/auth/analytics.readonly'
     );
 
-    const [overviewData, geoData, deviceData, pageData] = await Promise.all([
+    const [overviewData, geoData, deviceData, pageData, trafficSourceData] = await Promise.all([
       fetchGA4Report(token, propertyId, {
         metrics: [
           { name: 'totalUsers' },
@@ -48,6 +48,11 @@ export default async function handler(req, res) {
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
         limit: 10,
       }),
+      fetchGA4Report(token, propertyId, {
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        metrics: [{ name: 'totalUsers' }, { name: 'sessions' }],
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+      }),
     ]);
 
     res.status(200).json({
@@ -55,6 +60,7 @@ export default async function handler(req, res) {
       geography: geoData,
       devices: deviceData,
       pages: pageData,
+      trafficSources: trafficSourceData,
     });
   } catch (error) {
     console.error('GA4 Error:', error);
