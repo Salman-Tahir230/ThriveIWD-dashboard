@@ -7,7 +7,8 @@ export default function PageAnalytics() {
   const { analytics } = useDashboardData();
 
   const pageAnalyticsData = (analytics?.pages ? parseGA4Report(analytics.pages) : []).map((row) => ({
-    page: row.pagePath || 'Unknown',
+    title: row.pageTitle || row.pagePath || 'Unknown',
+    path: row.pagePath || '',
     avgTimeSpent: Math.round(Number(row.averageSessionDuration) || 0),
     bounceRate: Math.round((Number(row.bounceRate) || 0) * 100),
     views: Number(row.screenPageViews) || 0,
@@ -34,7 +35,8 @@ export default function PageAnalytics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pageAnalyticsData.map((data, idx) => (
             <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-5 border border-slate-100 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-colors">
-              <h3 className="text-base font-medium text-slate-900 dark:text-white mb-4 truncate" title={data.page}>{data.page}</h3>
+              <h3 className="text-base font-medium text-slate-900 dark:text-white mb-1 truncate" title={data.title}>{data.title}</h3>
+              <div className="text-xs text-slate-400 dark:text-slate-500 mb-4 truncate" title={data.path}>{data.path}</div>
 
               <div className="flex justify-between items-center pb-1">
                 <div className="flex items-center gap-2">

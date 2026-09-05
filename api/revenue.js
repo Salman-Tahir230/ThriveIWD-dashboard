@@ -17,6 +17,7 @@ export default async function handler(req, res) {
       paidTotal: 0,
       paidCount: 0,
       pendingCount: 0,
+      paidByTier: { 'VAP FLEX': 0, 'VAP CONNECT': 0, 'VAP LIVE': 0 },
       pendingByTier: { 'VAP FLEX': 0, 'VAP CONNECT': 0, 'VAP LIVE': 0 },
     };
 
@@ -41,6 +42,8 @@ export default async function handler(req, res) {
         if (isVap) {
           vap.paidTotal += amount;
           vap.paidCount += 1;
+          const tier = productNames.find((name) => VAP_PRODUCTS.has(name));
+          if (tier) vap.paidByTier[tier] = (vap.paidByTier[tier] || 0) + 1;
         }
       } else if (isVap) {
         vap.pendingCount += 1;

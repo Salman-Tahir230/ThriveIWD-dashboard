@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "thrive-dashboard",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5180", "--strictPort"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NODE_OPTIONS=--dns-result-order=ipv4first", "npm", "run", "dev", "--", "--port", "5180", "--strictPort"],
       "port": 5180,
       "autoPort": false
     }

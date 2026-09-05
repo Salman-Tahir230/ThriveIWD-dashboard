@@ -1,12 +1,23 @@
 import React, { useMemo } from 'react';
 import { useDashboardData } from '../context/DashboardDataContext';
 import { parseGA4Report, formatSeconds } from '../lib/ga4';
-import { Info, MapPin } from 'lucide-react';
+import { Info, MapPin, Globe } from 'lucide-react';
 
 export default function GeographyTable() {
   const { analytics } = useDashboardData();
 
-  const sortedData = useMemo(() => {
+  const countryData = useMemo(() => {
+    const rows = analytics?.countries ? parseGA4Report(analytics.countries) : [];
+    return rows
+      .map((row) => ({
+        country: row.country || 'Unknown',
+        userCount: Number(row.totalUsers) || 0,
+        sessions: Number(row.sessions) || 0,
+      }))
+      .sort((a, b) => b.userCount - a.userCount);
+  }, [analytics]);
+
+  const cityData = useMemo(() => {
     const rows = analytics?.geography ? parseGA4Report(analytics.geography) : [];
     return rows
       .map((row) => ({
@@ -18,7 +29,7 @@ export default function GeographyTable() {
       .sort((a, b) => b.userCount - a.userCount);
   }, [analytics]);
 
-  if (sortedData.length === 0) {
+  if (countryData.length === 0 && cityData.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mt-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">User Geography</h2>
@@ -27,15 +38,43 @@ export default function GeographyTable() {
     );
   }
 
+  const totalUsers = countryData.reduce((sum, r) => sum + r.userCount, 0);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-6">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-indigo-500" />
-          User Geography
-        </h2>
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+        <Globe className="w-5 h-5 text-indigo-500" />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Traffic by Country</h2>
       </div>
-      
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-700">
+              <th className="py-3 px-6 font-medium">Country</th>
+              <th className="py-3 px-6 font-medium text-right">Users</th>
+              <th className="py-3 px-6 font-medium text-right">Sessions</th>
+              <th className="py-3 px-6 font-medium text-right">Share</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            {countryData.map((row) => (
+              <tr key={row.country} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <td className="py-3 px-6 text-slate-900 dark:text-slate-100 font-medium">{row.country}</td>
+                <td className="py-3 px-6 text-slate-900 dark:text-slate-100 text-right font-medium">{row.userCount.toLocaleString()}</td>
+                <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-right">{row.sessions.toLocaleString()}</td>
+                <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-right">
+                  {totalUsers > 0 ? `${Math.round((row.userCount / totalUsers) * 100)}%` : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="p-6 border-t border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+        <MapPin className="w-5 h-5 text-indigo-500" />
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">By City</h3>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -58,21 +97,13 @@ export default function GeographyTable() {
             </tr>
           </thead>
           <tbody className="text-sm">
-            {sortedData.map((row, idx) => (
-              <tr 
-                key={idx} 
+            {cityData.map((row, idx) => (
+              <tr
+                key={idx}
                 className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 <td className="py-3 px-6 text-slate-900 dark:text-slate-100 font-medium">{row.city}</td>
-                <td className="py-3 px-6 text-slate-600 dark:text-slate-400">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    row.country === 'Canada' 
-                      ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                      : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                  }`}>
-                    {row.country}
-                  </span>
-                </td>
+                <td className="py-3 px-6 text-slate-600 dark:text-slate-400">{row.country}</td>
                 <td className="py-3 px-6 text-slate-900 dark:text-slate-100 text-right font-medium">{row.userCount.toLocaleString()}</td>
                 <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-right">{row.avgSessionDuration}</td>
               </tr>

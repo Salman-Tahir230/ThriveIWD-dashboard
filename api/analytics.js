@@ -14,7 +14,15 @@ export default async function handler(req, res) {
       'https://www.googleapis.com/auth/analytics.readonly'
     );
 
-    const [overviewData, geoData, deviceData, pageData, trafficSourceData] = await Promise.all([
+    const [
+      overviewData,
+      geoData,
+      countryData,
+      deviceData,
+      pageData,
+      trafficSourceData,
+      landingPageData,
+    ] = await Promise.all([
       fetchGA4Report(token, propertyId, {
         metrics: [
           { name: 'totalUsers' },
@@ -24,6 +32,7 @@ export default async function handler(req, res) {
           { name: 'averageSessionDuration' },
           { name: 'newUsers' },
           { name: 'bounceRate' },
+          { name: 'engagementRate' },
         ],
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
       }),
@@ -31,7 +40,16 @@ export default async function handler(req, res) {
         dimensions: [{ name: 'country' }, { name: 'city' }],
         metrics: [{ name: 'totalUsers' }, { name: 'averageSessionDuration' }],
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
-        limit: 10,
+        limit: 25,
+      }),
+      // Country-level rollup, separate from the city-level report above so
+      // "which countries send us traffic" isn't skewed by the city limit.
+      fetchGA4Report(token, propertyId, {
+        dimensions: [{ name: 'country' }],
+        metrics: [{ name: 'totalUsers' }, { name: 'sessions' }],
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        orderBys: [{ metric: { metricName: 'totalUsers' }, desc: true }],
+        limit: 25,
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'deviceCategory' }, { name: 'operatingSystem' }],
@@ -39,28 +57,44 @@ export default async function handler(req, res) {
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
       }),
       fetchGA4Report(token, propertyId, {
-        dimensions: [{ name: 'pagePath' }],
+        dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
         metrics: [
           { name: 'screenPageViews' },
           { name: 'averageSessionDuration' },
           { name: 'bounceRate' },
         ],
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
-        limit: 10,
+        orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+        limit: 15,
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'sessionDefaultChannelGroup' }],
         metrics: [{ name: 'totalUsers' }, { name: 'sessions' }],
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
       }),
+      // Where sessions actually enter the site — the first page of each session.
+      fetchGA4Report(token, propertyId, {
+        dimensions: [{ name: 'landingPage' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'bounceRate' },
+          { name: 'averageSessionDuration' },
+        ],
+        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 15,
+      }),
     ]);
 
     res.status(200).json({
       overview: overviewData,
       geography: geoData,
+      countries: countryData,
       devices: deviceData,
       pages: pageData,
       trafficSources: trafficSourceData,
+      landingPages: landingPageData,
     });
   } catch (error) {
     console.error('GA4 Error:', error);
