@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useDashboardData } from '../context/DashboardDataContext';
 import { parseGA4Report } from '../lib/ga4';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Info } from 'lucide-react';
 
 const GREEN_SHADES = ['#2E7D52', '#5B8F72', '#B7D2C0', '#8FB89E', '#DCE9E0'];
 
@@ -17,10 +18,18 @@ function toPercentSlices(counts) {
     }));
 }
 
-function DonutCard({ title, data, rangeLabel }) {
+function DonutCard({ title, data, rangeLabel, tooltip }) {
   return (
     <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
-      <h3 className="text-sm font-semibold text-[var(--text)] mb-4">{title}</h3>
+      <h3 className="text-sm font-semibold text-[var(--text)] mb-4 inline-flex items-center gap-1.5">
+        {title}
+        <div className="relative group cursor-pointer inline-flex items-center">
+          <Info className="w-3.5 h-3.5 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" />
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-slate-900 text-white text-xs rounded-lg py-2 px-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 shadow-lg font-normal whitespace-normal text-center">
+            {tooltip}
+          </div>
+        </div>
+      </h3>
       {data.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">No data available for the {rangeLabel}.</p>
       ) : (
@@ -78,8 +87,18 @@ export default function DeviceBreakdown() {
 
   return (
     <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-      <DonutCard title="Device Type" data={deviceData.mainBreakdown} rangeLabel={rangeLabel} />
-      <DonutCard title="Mobile OS" data={deviceData.mobileOS} rangeLabel={rangeLabel} />
+      <DonutCard
+        title="Device Type"
+        data={deviceData.mainBreakdown}
+        rangeLabel={rangeLabel}
+        tooltip="What kind of device visitors used to browse the site — desktop computer, mobile phone, or tablet."
+      />
+      <DonutCard
+        title="Mobile OS"
+        data={deviceData.mobileOS}
+        rangeLabel={rangeLabel}
+        tooltip="Of the visitors on mobile phones, what operating system (iOS or Android) they were using."
+      />
     </div>
   );
 }
