@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ChevronRight } from 'lucide-react';
 import { useDashboardData } from '../context/DashboardDataContext';
+import LeadDetailModal from './LeadDetailModal';
 
 function normalizeLead(row, idx) {
   return {
@@ -12,6 +13,10 @@ function normalizeLead(row, idx) {
     cohort: row['Cohort'] || 'Unknown',
     registrationDate: row['Registration Date'] || '',
     paymentStatus: row['Payment Status'] || 'Unknown',
+    amountDue: row['Amount Due (CAD)'] || '',
+    amountPaid: row['Amount Paid (CAD)'] || '',
+    participantStatus: row['Participant Status'] || '',
+    raw: row,
   };
 }
 
@@ -41,6 +46,7 @@ export default function LeadTable() {
   const [cohortFilter, setCohortFilter] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [selectedLead, setSelectedLead] = useState(null);
 
   const normalizedLeads = useMemo(() => {
     const rows = leads?.leads || [];
@@ -161,12 +167,20 @@ export default function LeadTable() {
               <th className="py-2.5 px-6 font-medium">VAP Tier</th>
               <th className="py-2.5 px-6 font-medium">Cohort</th>
               <th className="py-2.5 px-6 font-medium">Registered</th>
+              <th className="py-2.5 px-6 font-medium text-right">Amount Due</th>
+              <th className="py-2.5 px-6 font-medium text-right">Amount Paid</th>
               <th className="py-2.5 px-6 font-medium">Payment</th>
+              <th className="py-2.5 px-6 font-medium">Status</th>
+              <th className="py-2.5 px-4 font-medium"></th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {filteredLeads.map((lead) => (
-              <tr key={lead.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--subtle-bg)] transition-colors">
+              <tr
+                key={lead.id}
+                className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--subtle-bg)] transition-colors cursor-pointer"
+                onClick={() => setSelectedLead(lead.raw)}
+              >
                 <td className="py-3 px-6 text-[var(--text-muted)] font-mono text-xs">{lead.participantId}</td>
                 <td className="py-3 px-6 text-[var(--text)] font-medium">
                   {lead.name}
@@ -175,12 +189,18 @@ export default function LeadTable() {
                 <td className="py-3 px-6 text-[var(--text-soft)]">{lead.tier}</td>
                 <td className="py-3 px-6 text-[var(--text-soft)]">{lead.cohort}</td>
                 <td className="py-3 px-6 text-[var(--text-soft)]">{lead.registrationDate}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)] text-right">{lead.amountDue ? `$${lead.amountDue}` : '—'}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)] text-right">{lead.amountPaid ? `$${lead.amountPaid}` : '—'}</td>
                 <td className="py-3 px-6">{getPaymentBadge(lead.paymentStatus)}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)]">{lead.participantStatus || '—'}</td>
+                <td className="py-3 px-4 text-[var(--text-muted)]">
+                  <ChevronRight className="w-4 h-4" />
+                </td>
               </tr>
             ))}
             {filteredLeads.length === 0 && (
               <tr>
-                <td colSpan="6" className="py-12 text-center text-[var(--text-muted)] text-sm">
+                <td colSpan="10" className="py-12 text-center text-[var(--text-muted)] text-sm">
                   {normalizedLeads.length === 0
                     ? 'No registrations found in the connected Google Sheet.'
                     : 'No registrations found matching your filters.'}
@@ -190,6 +210,14 @@ export default function LeadTable() {
           </tbody>
         </table>
       </div>
+
+      {filteredLeads.length > 0 && (
+        <p className="px-6 py-3 text-xs text-[var(--text-muted)] border-t border-[var(--border)]">
+          Click any row to see everything on file for that registration — WhatsApp, interests, goals, agreements, and more.
+        </p>
+      )}
+
+      <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} />
     </div>
   );
 }
