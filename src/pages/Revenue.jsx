@@ -1,9 +1,8 @@
-import React from 'react';
 import RevenueTracker from '../components/RevenueTracker';
 
 export default function Revenue() {
   return (
-    <div>
+    <div className="space-y-6 max-w-6xl mx-auto">
       <RevenueTracker />
     </div>
   );

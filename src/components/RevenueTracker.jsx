@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { RefreshCw, AlertCircle, Clock } from 'lucide-react';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+
+const TIERS = [
+  { key: 'VAP FLEX', label: 'VAP Flex' },
+  { key: 'VAP CONNECT', label: 'VAP Connect' },
+  { key: 'VAP LIVE', label: 'VAP Live' },
+];
 
 function formatCAD(cents) {
   return (cents / 100).toLocaleString(undefined, { style: 'currency', currency: 'CAD' });
@@ -22,7 +19,6 @@ export default function RevenueTracker() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     fetch('/api/revenue')
       .then((r) => r.json())
       .then((json) => {
@@ -40,76 +36,92 @@ export default function RevenueTracker() {
   const chartData = useMemo(() => {
     if (!data) return [];
     return data.byMonth.map((m) => ({
-      month: m.month,
+      month: new Date(m.month + '-02').toLocaleString('en-US', { month: 'short' }),
       amount: m.amount / 100,
     }));
   }, [data]);
 
   if (loading) {
     return (
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#6b7280' }}>
-          <RefreshCw size={18} className="animate-spin" />
-          <span>Loading revenue from Stripe…</span>
-        </div>
+      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6 flex items-center gap-3 text-slate-500">
+        <RefreshCw size={18} className="animate-spin" />
+        <span className="text-sm">Loading revenue from Stripe…</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#b91c1c' }}>
-          <AlertCircle size={18} />
-          <span>Failed to load revenue: {error}</span>
-        </div>
+      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6 flex items-center gap-3 text-rose-600">
+        <AlertCircle size={18} />
+        <span className="text-sm">Failed to load revenue: {error}</span>
       </div>
     );
   }
 
+  const { vap } = data;
+
   return (
-    <div style={cardStyle}>
-      <h2 style={{ margin: '0 0 8px 0', fontSize: '1.5rem', color: '#111827' }}>Revenue Tracker</h2>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '24px' }}>
-        <span style={{ fontSize: '2.5rem', fontWeight: '800', color: '#111827' }}>
-          {formatCAD(data.totalRevenue)}
-        </span>
-        <span style={{ fontSize: '1rem', color: '#6b7280', fontWeight: '500' }}>
-          total revenue (all products, Stripe live data)
-        </span>
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
+        <p className="text-xs text-slate-400 mb-1">Total Revenue · all-time, Stripe</p>
+        <div className="text-4xl font-bold text-slate-900 mb-4">{formatCAD(data.totalRevenue)}</div>
+        <div className="flex flex-wrap gap-8">
+          <div>
+            <div className="text-xs text-slate-400">VAP Paid</div>
+            <div className="text-lg font-bold text-slate-900">{formatCAD(vap.paidTotal)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-400">Completed Payments</div>
+            <div className="text-lg font-bold text-slate-900">{vap.paidCount}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-400">Pending Checkout</div>
+            <div className="text-lg font-bold text-amber-600">{vap.pendingCount}</div>
+          </div>
+        </div>
       </div>
 
       {chartData.length > 0 && (
-        <div style={{ height: '320px', width: '100%', marginBottom: '32px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(v) => `$${v}`} dx={-10} />
-              <Tooltip
-                cursor={{ fill: '#f3f4f6' }}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                formatter={(value) => [`$${value.toLocaleString()} CAD`, 'Revenue']}
-              />
-              <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-              <Bar dataKey="amount" name="Revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">Monthly Revenue</h2>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <Tooltip
+                  cursor={{ fill: '#F7FAF8' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '12px' }}
+                  formatter={(value) => [`$${value.toLocaleString()} CAD`, 'Revenue']}
+                />
+                <Bar dataKey="amount" name="Revenue" fill="#2E7D52" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
-      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>By product</h3>
-      <div style={{ marginBottom: '32px' }}>
+      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <h2 className="text-sm font-semibold text-slate-900">By Product / Tier</h2>
+        </div>
         {data.byProduct.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>No paid transactions yet.</p>
+          <p className="px-6 pb-6 text-sm text-slate-500">No paid transactions yet.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-            <tbody>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-slate-400 text-[11px] uppercase tracking-wide border-y border-[#E1E9E3]">
+                <th className="py-2.5 px-6 font-medium">Product</th>
+                <th className="py-2.5 px-6 font-medium text-right">Paid Count</th>
+                <th className="py-2.5 px-6 font-medium text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
               {data.byProduct.map((p) => (
-                <tr key={p.product} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                  <td style={{ padding: '8px 0', color: '#111827' }}>{p.product}</td>
-                  <td style={{ padding: '8px 0', color: '#6b7280', textAlign: 'right' }}>{p.count} paid</td>
-                  <td style={{ padding: '8px 0', color: '#111827', fontWeight: 600, textAlign: 'right' }}>{formatCAD(p.amount)}</td>
+                <tr key={p.product} className="border-b border-[#F0F5F2] last:border-0 hover:bg-[#F7FAF8] transition-colors">
+                  <td className="py-3 px-6 text-slate-800">{p.product}</td>
+                  <td className="py-3 px-6 text-slate-500 text-right">{p.count}</td>
+                  <td className="py-3 px-6 text-slate-900 font-semibold text-right">{formatCAD(p.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -117,44 +129,36 @@ export default function RevenueTracker() {
         )}
       </div>
 
-      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>VAP Program (Flex / Connect / Live)</h3>
-        <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginBottom: '16px' }}>
-          Revenue specific to the VAP tiers registrants sign up for on the Leads page.
-        </p>
-
-        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: data.vap.pendingCount > 0 ? '16px' : 0 }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Paid</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>{formatCAD(data.vap.paidTotal)}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Completed payments</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>{data.vap.paidCount}</div>
-          </div>
+      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <h2 className="text-sm font-semibold text-slate-900">VAP Funnel × Payment Status</h2>
+          <p className="text-xs text-slate-400">Checkout sessions by tier and outcome</p>
         </div>
-
-        {data.vap.pendingCount > 0 && (
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '14px', color: '#92400e', fontSize: '0.8125rem', lineHeight: 1.5 }}>
-            <Clock size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <strong>{data.vap.pendingCount} registrant{data.vap.pendingCount === 1 ? '' : 's'} started checkout but haven't paid yet</strong>
-              {' '}({Object.entries(data.vap.pendingByTier).filter(([, c]) => c > 0).map(([tier, c]) => `${tier}: ${c}`).join(', ')}).
-              This matches the "Pending" payment status seen on the Leads page.
-            </div>
-          </div>
-        )}
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="text-slate-400 text-[11px] uppercase tracking-wide border-y border-[#E1E9E3]">
+              <th className="py-2.5 px-6 font-medium">Tier</th>
+              <th className="py-2.5 px-6 font-medium text-right">Paid</th>
+              <th className="py-2.5 px-6 font-medium text-right">Pending</th>
+              <th className="py-2.5 px-6 font-medium text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            {TIERS.map(({ key, label }) => {
+              const paid = vap.paidByTier[key] || 0;
+              const pending = vap.pendingByTier[key] || 0;
+              return (
+                <tr key={key} className="border-b border-[#F0F5F2] last:border-0 hover:bg-[#F7FAF8] transition-colors">
+                  <td className="py-3 px-6 text-slate-800">{label}</td>
+                  <td className="py-3 px-6 text-brand-600 font-semibold text-right">{paid}</td>
+                  <td className="py-3 px-6 text-amber-600 font-semibold text-right">{pending}</td>
+                  <td className="py-3 px-6 text-slate-500 text-right">{paid + pending}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-
-const cardStyle = {
-  padding: '24px',
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-  margin: '24px auto',
-  maxWidth: '900px',
-  fontFamily: '"Inter", "Roboto", sans-serif',
-};
