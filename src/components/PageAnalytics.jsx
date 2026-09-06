@@ -1,19 +1,42 @@
+import { useMemo } from 'react';
 import { Info } from 'lucide-react';
 import { useDashboardData } from '../context/DashboardDataContext';
-import { parseGA4Report } from '../lib/ga4';
+import { parseGA4Report, humanizePath } from '../lib/ga4';
 
 export default function PageAnalytics() {
   const { analytics, rangeLabel } = useDashboardData();
 
-  const pageAnalyticsData = (analytics?.pages ? parseGA4Report(analytics.pages) : [])
-    .map((row) => ({
-      title: row.pageTitle || row.pagePath || 'Unknown',
-      path: row.pagePath || '',
-      avgTimeSpent: Math.round(Number(row.averageSessionDuration) || 0),
-      bounceRate: Math.round((Number(row.bounceRate) || 0) * 100),
-      views: Number(row.screenPageViews) || 0,
-    }))
-    .slice(0, 4);
+  const pageAnalyticsData = useMemo(() => {
+    const rawRows = analytics?.pages ? parseGA4Report(analytics.pages) : [];
+
+    // The same path can appear as multiple rows with different titles (e.g.
+    // historical page-title changes), which reads as duplicate/confusing
+    // cards. Group by path and combine into one entry per page.
+    const byPath = new Map();
+    for (const row of rawRows) {
+      const path = row.pagePath || 'Unknown';
+      const views = Number(row.screenPageViews) || 0;
+      const avgTime = Number(row.averageSessionDuration) || 0;
+      const bounce = Number(row.bounceRate) || 0;
+
+      const existing = byPath.get(path) || { path, views: 0, timeWeighted: 0, bounceWeighted: 0 };
+      existing.views += views;
+      existing.timeWeighted += avgTime * views;
+      existing.bounceWeighted += bounce * views;
+      byPath.set(path, existing);
+    }
+
+    return Array.from(byPath.values())
+      .map((p) => ({
+        label: humanizePath(p.path),
+        path: p.path,
+        avgTimeSpent: p.views > 0 ? Math.round(p.timeWeighted / p.views) : 0,
+        bounceRate: p.views > 0 ? Math.round((p.bounceWeighted / p.views) * 100) : 0,
+        views: p.views,
+      }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 4);
+  }, [analytics]);
 
   return (
     <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
@@ -34,7 +57,7 @@ export default function PageAnalytics() {
         <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           {pageAnalyticsData.map((data, idx) => (
             <div key={idx} className="rounded-lg border border-[var(--border)] p-4">
-              <h3 className="text-sm font-medium text-[var(--text)] truncate" title={data.title}>{data.title}</h3>
+              <h3 className="text-sm font-medium text-[var(--text)] truncate" title={data.label}>{data.label}</h3>
               <div className="text-xs text-[var(--text-muted)] mb-3 truncate" title={data.path}>{data.path}</div>
               <div className="flex justify-between text-xs">
                 <div>
