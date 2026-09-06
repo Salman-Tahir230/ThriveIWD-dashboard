@@ -20,8 +20,8 @@ function StatCard({ icon: Icon, label, value, sub, tooltip }) {
             </div>
           )}
         </div>
-        <div className="text-xl font-bold text-[var(--text)] truncate">{value}</div>
-        {sub && <div className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{sub}</div>}
+        <div className="text-lg sm:text-xl font-bold text-[var(--text)] leading-tight break-words">{value}</div>
+        {sub && <div className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug break-words">{sub}</div>}
       </div>
     </div>
   );
@@ -43,7 +43,7 @@ export default function OverviewStats() {
   const returningPct = totalUsers > 0 ? 100 - newPct : 0;
 
   return (
-    <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+    <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
       <StatCard
         icon={Users}
         label="Users"

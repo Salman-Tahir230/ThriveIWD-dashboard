@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useDashboardData } from '../context/DashboardDataContext';
 
 function normalizeLead(row, idx) {
@@ -34,7 +35,7 @@ const selectClass =
   'border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-soft)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer';
 
 export default function LeadTable() {
-  const { leads } = useDashboardData();
+  const { leads, loading, refetch } = useDashboardData();
   const [tierFilter, setTierFilter] = useState('All');
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [cohortFilter, setCohortFilter] = useState('All');
@@ -77,6 +78,28 @@ export default function LeadTable() {
 
   return (
     <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card overflow-hidden">
+      <div
+        className="px-6 py-3 flex items-center justify-between gap-3 border-b border-[var(--border)]"
+        style={{ backgroundColor: 'var(--accent-soft)' }}
+      >
+        <div className="flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--accent)' }}>
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent)' }} />
+          <span>
+            Live-synced with the VAP Registration Database{leads?.sheetName ? ` (Google Sheets — "${leads.sheetName}")` : ' (Google Sheets)'}. Any new signup appears here automatically.
+          </span>
+        </div>
+        <button
+          onClick={refetch}
+          disabled={loading}
+          className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0 disabled:opacity-50"
+          style={{ color: 'var(--accent)' }}
+          title="Refresh now"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
       <div className="p-6 flex flex-wrap items-end gap-3 border-b border-[var(--border)]">
         <div>
           <label className="block text-xs text-[var(--text-muted)] mb-1">VAP Tier</label>

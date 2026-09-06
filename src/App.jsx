@@ -11,7 +11,7 @@ import { DashboardDataProvider, useDashboardData, DATE_RANGE_OPTIONS } from './c
 const PAGE_TITLES = {
   '/': { title: 'Dashboard', subtitle: 'Overview' },
   '/users': { title: 'Users', subtitle: 'Geography & devices' },
-  '/leads': { title: 'Leads', subtitle: 'VAP registrations' },
+  '/leads': { title: 'Leads', subtitle: 'VAP registrations · live from Google Sheets' },
   '/revenue': { title: 'Revenue', subtitle: 'All-time · Stripe' },
 };
 
