@@ -17,12 +17,12 @@ function toPercentSlices(counts) {
     }));
 }
 
-function DonutCard({ title, data }) {
+function DonutCard({ title, data, rangeLabel }) {
   return (
-    <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
-      <h3 className="text-sm font-semibold text-slate-900 mb-4">{title}</h3>
+    <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
+      <h3 className="text-sm font-semibold text-[var(--text)] mb-4">{title}</h3>
       {data.length === 0 ? (
-        <p className="text-sm text-slate-500">No data available for the last 30 days.</p>
+        <p className="text-sm text-[var(--text-muted)]">No data available for the {rangeLabel}.</p>
       ) : (
         <div className="flex items-center gap-6">
           <div className="w-32 h-32 flex-shrink-0">
@@ -41,8 +41,8 @@ function DonutCard({ title, data }) {
             {data.map((entry) => (
               <div key={entry.name} className="flex items-center gap-2 text-sm">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.fill }} />
-                <span className="text-slate-700">{entry.name}</span>
-                <span className="text-slate-400">{entry.value}%</span>
+                <span className="text-[var(--text-soft)]">{entry.name}</span>
+                <span className="text-[var(--text-muted)]">{entry.value}%</span>
               </div>
             ))}
           </div>
@@ -53,7 +53,7 @@ function DonutCard({ title, data }) {
 }
 
 export default function DeviceBreakdown() {
-  const { analytics } = useDashboardData();
+  const { analytics, rangeLabel } = useDashboardData();
 
   const deviceData = useMemo(() => {
     const rows = analytics?.devices ? parseGA4Report(analytics.devices) : [];
@@ -78,8 +78,8 @@ export default function DeviceBreakdown() {
 
   return (
     <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-      <DonutCard title="Device Type" data={deviceData.mainBreakdown} />
-      <DonutCard title="Mobile OS" data={deviceData.mobileOS} />
+      <DonutCard title="Device Type" data={deviceData.mainBreakdown} rangeLabel={rangeLabel} />
+      <DonutCard title="Mobile OS" data={deviceData.mobileOS} rangeLabel={rangeLabel} />
     </div>
   );
 }

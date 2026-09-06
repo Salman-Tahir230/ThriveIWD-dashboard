@@ -15,20 +15,23 @@ function normalizeLead(row, idx) {
 }
 
 function getPaymentBadge(status) {
-  const styles = {
-    Paid: 'bg-brand-50 text-brand-700',
-    Pending: 'bg-amber-50 text-amber-700',
-    Refunded: 'bg-rose-50 text-rose-700',
+  const styleMap = {
+    Paid: { backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' },
+    Pending: { backgroundColor: 'var(--warn-soft)', color: 'var(--warn)' },
+    Refunded: { backgroundColor: 'var(--danger-soft)', color: 'var(--danger)' },
   };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-slate-100 text-slate-600'}`}>
+    <span
+      className="px-2.5 py-1 rounded-full text-xs font-medium"
+      style={styleMap[status] || { backgroundColor: 'var(--track-bg)', color: 'var(--text-soft)' }}
+    >
       {status}
     </span>
   );
 }
 
 const selectClass =
-  'border border-[#E1E9E3] bg-white text-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer';
+  'border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-soft)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer';
 
 export default function LeadTable() {
   const { leads } = useDashboardData();
@@ -73,10 +76,10 @@ export default function LeadTable() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card overflow-hidden">
-      <div className="p-6 flex flex-wrap items-end gap-3 border-b border-[#E1E9E3]">
+    <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card overflow-hidden">
+      <div className="p-6 flex flex-wrap items-end gap-3 border-b border-[var(--border)]">
         <div>
-          <label className="block text-xs text-slate-400 mb-1">VAP Tier</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">VAP Tier</label>
           <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)} className={selectClass}>
             <option value="All">All Tiers</option>
             {tiers.map((t) => (
@@ -86,7 +89,7 @@ export default function LeadTable() {
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Payment Status</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Payment Status</label>
           <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={selectClass}>
             <option value="All">All Statuses</option>
             {paymentStatuses.map((s) => (
@@ -96,7 +99,7 @@ export default function LeadTable() {
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Cohort</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Cohort</label>
           <select value={cohortFilter} onChange={(e) => setCohortFilter(e.target.value)} className={selectClass}>
             <option value="All">All Cohorts</option>
             {cohorts.map((c) => (
@@ -106,22 +109,22 @@ export default function LeadTable() {
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">From</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">From</label>
           <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={selectClass} />
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">To</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">To</label>
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={selectClass} />
         </div>
 
         {hasActiveFilters && (
-          <button onClick={clearFilters} className="text-sm text-slate-500 hover:text-brand-600 px-2 py-2">
+          <button onClick={clearFilters} className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] px-2 py-2">
             Clear
           </button>
         )}
 
-        <span className="ml-auto text-xs text-slate-400 self-center">
+        <span className="ml-auto text-xs text-[var(--text-muted)] self-center">
           {filteredLeads.length} of {normalizedLeads.length} registrations
         </span>
       </div>
@@ -129,7 +132,7 @@ export default function LeadTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="text-slate-400 text-[11px] uppercase tracking-wide border-b border-[#E1E9E3]">
+            <tr className="bg-[var(--table-head-bg)] text-[var(--text-muted)] text-[11px] uppercase tracking-wide border-b border-[var(--border)]">
               <th className="py-2.5 px-6 font-medium">Participant ID</th>
               <th className="py-2.5 px-6 font-medium">Full Name</th>
               <th className="py-2.5 px-6 font-medium">VAP Tier</th>
@@ -140,21 +143,21 @@ export default function LeadTable() {
           </thead>
           <tbody className="text-sm">
             {filteredLeads.map((lead) => (
-              <tr key={lead.id} className="border-b border-[#F0F5F2] last:border-0 hover:bg-[#F7FAF8] transition-colors">
-                <td className="py-3 px-6 text-slate-500 font-mono text-xs">{lead.participantId}</td>
-                <td className="py-3 px-6 text-slate-800 font-medium">
+              <tr key={lead.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--subtle-bg)] transition-colors">
+                <td className="py-3 px-6 text-[var(--text-muted)] font-mono text-xs">{lead.participantId}</td>
+                <td className="py-3 px-6 text-[var(--text)] font-medium">
                   {lead.name}
-                  <div className="text-xs text-slate-400 font-normal">{lead.email}</div>
+                  <div className="text-xs text-[var(--text-muted)] font-normal">{lead.email}</div>
                 </td>
-                <td className="py-3 px-6 text-slate-600">{lead.tier}</td>
-                <td className="py-3 px-6 text-slate-600">{lead.cohort}</td>
-                <td className="py-3 px-6 text-slate-600">{lead.registrationDate}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)]">{lead.tier}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)]">{lead.cohort}</td>
+                <td className="py-3 px-6 text-[var(--text-soft)]">{lead.registrationDate}</td>
                 <td className="py-3 px-6">{getPaymentBadge(lead.paymentStatus)}</td>
               </tr>
             ))}
             {filteredLeads.length === 0 && (
               <tr>
-                <td colSpan="6" className="py-12 text-center text-slate-500 text-sm">
+                <td colSpan="6" className="py-12 text-center text-[var(--text-muted)] text-sm">
                   {normalizedLeads.length === 0
                     ? 'No registrations found in the connected Google Sheet.'
                     : 'No registrations found matching your filters.'}

@@ -1,15 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useDashboardData } from '../context/DashboardDataContext';
 import { parseGA4Report, parseGA4Overview } from '../lib/ga4';
 
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours — avoid re-calling Groq on every page load
+const cacheKey = (dateRange) => `thrive-ai-insights-cache-${dateRange}`;
+
+function readCache(dateRange) {
+  try {
+    const raw = localStorage.getItem(cacheKey(dateRange));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.insights) || Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(dateRange, insights) {
+  try {
+    localStorage.setItem(cacheKey(dateRange), JSON.stringify({ timestamp: Date.now(), insights }));
+  } catch {
+    // localStorage unavailable (private browsing, quota) — caching is a nice-to-have, not required
+  }
+}
+
+function timeAgo(timestamp) {
+  const mins = Math.round((Date.now() - timestamp) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  return `${hours}h ago`;
+}
+
 export default function AIPanel() {
-  const { analytics, leads, loading: dataLoading } = useDashboardData();
+  const { analytics, leads, loading: dataLoading, dateRange, rangeLabel } = useDashboardData();
   const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [generatedAt, setGeneratedAt] = useState(null);
 
-  const fetchInsights = async () => {
+  const fetchInsights = async (force = false) => {
+    if (!force) {
+      const cached = readCache(dateRange);
+      if (cached) {
+        setInsights(cached.insights);
+        setGeneratedAt(cached.timestamp);
+        setError(null);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -29,6 +71,8 @@ export default function AIPanel() {
       }
 
       setInsights(data.insights || []);
+      setGeneratedAt(Date.now());
+      writeCache(dateRange, data.insights || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -41,22 +85,24 @@ export default function AIPanel() {
       fetchInsights();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataLoading]);
+  }, [dataLoading, dateRange]);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
+    <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-brand-600" />
-          <h2 className="text-sm font-semibold text-slate-900">AI Insights</h2>
+          <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+          <h2 className="text-sm font-semibold text-[var(--text)]">AI Insights</h2>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400">Generated from last 30 days</span>
+          <span className="text-xs text-[var(--text-muted)]">
+            Based on {rangeLabel}{generatedAt ? ` · updated ${timeAgo(generatedAt)}` : ''}
+          </span>
           <button
-            onClick={fetchInsights}
+            onClick={() => fetchInsights(true)}
             disabled={loading}
-            className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-md transition-colors disabled:opacity-50"
-            title="Refresh insights"
+            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-md transition-colors disabled:opacity-50"
+            title="Refresh insights now (otherwise refreshes automatically every 2 hours)"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -64,7 +110,7 @@ export default function AIPanel() {
       </div>
 
       {loading && insights.length === 0 ? (
-        <div className="flex items-center gap-3 text-slate-500">
+        <div className="flex items-center gap-3 text-[var(--text-muted)]">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <p className="text-sm">Analyzing data to generate insights...</p>
         </div>
@@ -76,8 +122,8 @@ export default function AIPanel() {
       ) : (
         <ul className="space-y-2.5">
           {insights.map((insight, idx) => (
-            <li key={idx} className="flex gap-2.5 text-slate-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 mt-1.5 flex-shrink-0" />
+            <li key={idx} className="flex gap-2.5 text-[var(--text-soft)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] mt-1.5 flex-shrink-0" />
               <p className="text-sm leading-relaxed">{insight}</p>
             </li>
           ))}

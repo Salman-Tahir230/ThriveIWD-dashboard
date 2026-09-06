@@ -5,7 +5,7 @@ import { parseGA4Report } from '../lib/ga4';
 const COLORS = ['#2E7D52', '#5B8F72', '#8FB89E', '#B7D2C0', '#DCE9E0'];
 
 export default function TrafficChart() {
-  const { analytics } = useDashboardData();
+  const { analytics, rangeLabel } = useDashboardData();
 
   const trafficSourceData = (analytics?.trafficSources ? parseGA4Report(analytics.trafficSources) : [])
     .map((row) => ({
@@ -16,9 +16,9 @@ export default function TrafficChart() {
 
   if (trafficSourceData.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
-        <h2 className="text-sm font-semibold text-slate-900 mb-2">Traffic Source Comparison</h2>
-        <p className="text-sm text-slate-500">No GA4 traffic-source data available for the last 30 days.</p>
+      <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
+        <h2 className="text-sm font-semibold text-[var(--text)] mb-2">Traffic Source Comparison</h2>
+        <p className="text-sm text-[var(--text-muted)]">No GA4 traffic-source data available for the {rangeLabel}.</p>
       </div>
     );
   }
@@ -27,9 +27,9 @@ export default function TrafficChart() {
   const maxUsers = Math.max(...trafficSourceData.map((d) => d.users), 1);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E1E9E3] shadow-card p-6">
-      <h2 className="text-sm font-semibold text-slate-900">Traffic Source Comparison</h2>
-      <p className="text-xs text-slate-400 mb-5">Users by channel, last 30 days</p>
+    <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-card p-6">
+      <h2 className="text-sm font-semibold text-[var(--text)]">Traffic Source Comparison</h2>
+      <p className="text-xs text-[var(--text-muted)] mb-5">Users by channel, {rangeLabel}</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8 items-center">
         <div className="space-y-3">
@@ -39,10 +39,10 @@ export default function TrafficChart() {
             return (
               <div key={row.source}>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="font-medium text-slate-700">{row.source}</span>
-                  <span className="text-slate-400">{row.users.toLocaleString()} · {pct}%</span>
+                  <span className="font-medium text-[var(--text-soft)]">{row.source}</span>
+                  <span className="text-[var(--text-muted)]">{row.users.toLocaleString()} · {pct}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-[#F0F5F2] overflow-hidden">
+                <div className="h-2 rounded-full bg-[var(--track-bg)] overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{ width: `${widthPct}%`, backgroundColor: COLORS[idx % COLORS.length] }}
@@ -71,7 +71,7 @@ export default function TrafficChart() {
           </div>
           <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2">
             {trafficSourceData.map((entry, index) => (
-              <div key={entry.source} className="flex items-center text-[11px] text-slate-500">
+              <div key={entry.source} className="flex items-center text-[11px] text-[var(--text-muted)]">
                 <div className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
                 {entry.source}
               </div>

@@ -23,6 +23,23 @@ export function parseGA4Overview(report) {
   return rows[0] || null;
 }
 
+// Turns a raw URL path into a plain-English label for non-technical readers,
+// e.g. "/" -> "Homepage", "/blog/understanding-mental-wellness" -> "Blog › Understanding Mental Wellness".
+export function humanizePath(path) {
+  if (!path || path === '/') return 'Homepage';
+  if (path === '(not set)' || path === 'Unknown') return 'Unknown / No Referrer';
+
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length === 0) return 'Homepage';
+
+  const words = segments.map((seg) =>
+    seg
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+  return words.join(' › ');
+}
+
 export function formatSeconds(seconds) {
   const s = Math.round(Number(seconds) || 0);
   const m = Math.floor(s / 60);

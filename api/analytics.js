@@ -9,6 +9,12 @@ export default async function handler(req, res) {
     const serviceAccount = JSON.parse(process.env.GA4_SERVICE_ACCOUNT_KEY);
     const propertyId = process.env.GA4_PROPERTY_ID;
 
+    const url = new URL(req.url, 'http://localhost');
+    const allowedRanges = new Set(['7', '30', '90']);
+    const rangeParam = url.searchParams.get('range');
+    const range = allowedRanges.has(rangeParam) ? rangeParam : '30';
+    const startDate = `${range}daysAgo`;
+
     const token = await getAccessToken(
       serviceAccount,
       'https://www.googleapis.com/auth/analytics.readonly'
@@ -34,12 +40,12 @@ export default async function handler(req, res) {
           { name: 'bounceRate' },
           { name: 'engagementRate' },
         ],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'country' }, { name: 'city' }],
         metrics: [{ name: 'totalUsers' }, { name: 'averageSessionDuration' }],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
         limit: 25,
       }),
       // Country-level rollup, separate from the city-level report above so
@@ -47,14 +53,14 @@ export default async function handler(req, res) {
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'country' }],
         metrics: [{ name: 'totalUsers' }, { name: 'sessions' }],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
         orderBys: [{ metric: { metricName: 'totalUsers' }, desc: true }],
         limit: 25,
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'deviceCategory' }, { name: 'operatingSystem' }],
         metrics: [{ name: 'totalUsers' }],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
@@ -63,14 +69,14 @@ export default async function handler(req, res) {
           { name: 'averageSessionDuration' },
           { name: 'bounceRate' },
         ],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
         orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 15,
       }),
       fetchGA4Report(token, propertyId, {
         dimensions: [{ name: 'sessionDefaultChannelGroup' }],
         metrics: [{ name: 'totalUsers' }, { name: 'sessions' }],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
       }),
       // Where sessions actually enter the site — the first page of each session.
       fetchGA4Report(token, propertyId, {
@@ -81,13 +87,14 @@ export default async function handler(req, res) {
           { name: 'bounceRate' },
           { name: 'averageSessionDuration' },
         ],
-        dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+        dateRanges: [{ startDate, endDate: 'today' }],
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 15,
       }),
     ]);
 
     res.status(200).json({
+      range,
       overview: overviewData,
       geography: geoData,
       countries: countryData,

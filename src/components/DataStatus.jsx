@@ -8,7 +8,7 @@ export default function DataStatus() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-slate-500 bg-white border border-[#E1E9E3] rounded-xl p-4">
+      <div className="flex items-center gap-3 text-[var(--text-muted)] bg-[var(--card-bg)] border border-[var(--border)] rounded-xl p-4">
         <RefreshCw className="w-4 h-4 animate-spin" />
         <p className="text-sm">Loading live data from Google Analytics &amp; Sheets…</p>
       </div>
