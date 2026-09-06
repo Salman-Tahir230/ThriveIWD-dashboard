@@ -17,7 +17,7 @@ function readCache(dateRange) {
     return null;
   }
 }
-
+//data range 
 function writeCache(dateRange, insights) {
   try {
     localStorage.setItem(cacheKey(dateRange), JSON.stringify({ timestamp: Date.now(), insights }));
